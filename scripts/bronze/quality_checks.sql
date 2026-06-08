@@ -99,4 +99,19 @@ end as sls_price
 from bronze.crm_sales_details
 where sls_sales != sls_quantity * sls_price 
 or sls_sales is null or sls_quantity is null or sls_price is null
-or sls_sales <= 0 or sls_quantity <=0 or sls_price <= 0
+or sls_sales <= 0 or sls_quantity <=0 or sls_price <= 0;
+
+select * from (select 
+case 
+	when cid like 'NAS%' then substring(cid, 4, length(cid)) 
+	else cid 
+end as cid,
+bdate,
+gen
+from bronze.erp_cust_az12
+)t 
+where cid not in (select cst_key from silver.crm_cust_info);
+
+select distinct bdate
+from bronze.erp_cust_az12
+where  bdate > '2020-01-01';
