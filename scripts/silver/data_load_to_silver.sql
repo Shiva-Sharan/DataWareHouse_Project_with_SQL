@@ -108,7 +108,7 @@ end as sls_due_dt,
 case 
 	when sls_sales is null 
 	or sls_sales <=0 
-	or sls_sales = sls_quantity * abs(sls_price)
+	or sls_sales != sls_quantity * abs(sls_price)
 	then sls_quantity * abs(sls_price)
 	else sls_sales
 end	as sls_sales, 
