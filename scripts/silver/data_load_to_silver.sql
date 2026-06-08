@@ -139,3 +139,17 @@ case
 	else 'n/a'
 end as gen
 from bronze.erp_cust_az12
+
+TRUNCATE table silver.erp_loc_a101;
+
+INSERT into silver.erp_loc_a101(cid, cntry)
+
+select 
+replace(cid, '-','') as cid,
+case 
+	when upper(trim(cntry)) IN ('US','USA') then 'United States'
+	when upper(trim(cntry)) = 'DE' THEN 'Germany'
+	WHEN trim(cntry) = '' or cntry is null then 'n/a'
+	else trim(cntry)
+END AS cntry
+from bronze.erp_loc_a101;
