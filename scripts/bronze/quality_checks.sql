@@ -115,3 +115,11 @@ where cid not in (select cst_key from silver.crm_cust_info);
 select distinct bdate
 from bronze.erp_cust_az12
 where  bdate > '2020-01-01';
+
+select * from bronze.erp_px_cat_g1v2
+where cat != trim(cat) 
+or subcat != trim(subcat) 
+or maintenance != trim(maintenance);
+
+select distinct maintenance
+from bronze.erp_px_cat_g1v2
