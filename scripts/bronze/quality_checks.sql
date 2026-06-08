@@ -1,4 +1,3 @@
-```sql id="uj4m8z"
 /*
 ===============================================================================
 BRONZE LAYER DATA QUALITY CHECKS
@@ -496,6 +495,4 @@ Transformation Type:
 
 SELECT DISTINCT
     maintenance
-
 FROM bronze.erp_px_cat_g1v2;
-```
