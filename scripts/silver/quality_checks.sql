@@ -86,3 +86,10 @@ where cid not in (select cst_key from silver.crm_cust_info);
 select distinct bdate
 from silver.erp_cust_az12
 where  bdate > '2020-01-01';
+
+select distinct cntry 
+from silver.erp_loc_a101;
+
+select cid 
+from silver.erp_loc_a101
+where length(cid) != 10
