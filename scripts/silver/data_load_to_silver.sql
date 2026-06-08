@@ -119,4 +119,23 @@ case
 	then sls_sales / nullif(sls_quantity,0)
 	else sls_price
 end as sls_price 
-from bronze.crm_sales_details
+from bronze.crm_sales_details;
+
+TRUNCATE TABLE silver.erp_cust_az12;
+INSERT INTO SILVER.erp_cust_az12(cid, bdate, gen)
+
+select 
+case 
+	when cid like 'NAS%' then substring(cid, 4, length(cid)) 
+	else cid 
+end as cid,
+case 
+	when bdate > CURRENT_DATe then null
+	else bdate
+end as bdate,
+case 
+	when UPPER(TRIM(gen)) in ('F', 'FEMALE') then 'Female'
+	when UPPER(TRIM(gen)) in ('M','MALE') then 'Male'
+	else 'n/a'
+end as gen
+from bronze.erp_cust_az12
