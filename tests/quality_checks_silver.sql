@@ -1,11 +1,11 @@
 /*
 ===============================================================================
-BRONZE LAYER DATA QUALITY CHECKS
+SILVER LAYER DATA QUALITY CHECKS
 ===============================================================================
 
 Purpose:
-    Validate and analyze raw Bronze layer data before loading into
-    the Silver layer.
+    Validate and analyze cleaned Silver layer data after transformation
+    from the Bronze layer.
 
 Checks Included:
     - Duplicate detection
@@ -42,7 +42,7 @@ SELECT
     cst_id,
     COUNT(*)
 
-FROM bronze.crm_cust_info
+FROM silver.crm_cust_info
 
 GROUP BY cst_id
 
@@ -64,7 +64,7 @@ SELECT
     LENGTH(cst_firstname),
     LENGTH(TRIM(cst_firstname))
 
-FROM bronze.crm_cust_info
+FROM silver.crm_cust_info
 
 WHERE cst_firstname != TRIM(cst_firstname);
 
@@ -83,7 +83,7 @@ SELECT
     LENGTH(cst_lastname),
     LENGTH(TRIM(cst_lastname))
 
-FROM bronze.crm_cust_info
+FROM silver.crm_cust_info
 
 WHERE cst_lastname != TRIM(cst_lastname);
 
@@ -100,7 +100,7 @@ Transformation Type:
 SELECT DISTINCT
     cst_martial_status
 
-FROM bronze.crm_cust_info;
+FROM silver.crm_cust_info;
 
 
 
@@ -126,7 +126,7 @@ SELECT
     prd_id,
     COUNT(*)
 
-FROM bronze.crm_prd_info
+FROM silver.crm_prd_info
 
 GROUP BY prd_id
 
@@ -146,7 +146,7 @@ Transformation Type:
 SELECT
     prd_nm
 
-FROM bronze.crm_prd_info
+FROM silver.crm_prd_info
 
 WHERE prd_nm != TRIM(prd_nm);
 
@@ -164,7 +164,7 @@ Transformation Type:
 SELECT
     COALESCE(prd_cost, 0)
 
-FROM bronze.crm_prd_info
+FROM silver.crm_prd_info
 
 WHERE prd_cost < 0
     OR prd_cost IS NULL;
@@ -173,7 +173,7 @@ WHERE prd_cost < 0
 
 /*
 ------------------------------------------------------------------------------
-Check 8: Distinct Product Line Codes
+Check 8: Distinct Product Line Values
 Transformation Type:
     - Data Standardization Validation
 ------------------------------------------------------------------------------
@@ -182,7 +182,7 @@ Transformation Type:
 SELECT DISTINCT
     prd_line
 
-FROM bronze.crm_prd_info;
+FROM silver.crm_prd_info;
 
 
 
@@ -197,7 +197,7 @@ Transformation Type:
 
 SELECT *
 
-FROM bronze.crm_prd_info
+FROM silver.crm_prd_info
 
 WHERE prd_end_dt < prd_start_dt
     OR prd_end_dt IS NULL
@@ -229,7 +229,7 @@ SELECT
 
     prd_end_dt
 
-FROM bronze.crm_prd_info;
+FROM silver.crm_prd_info;
 
 
 
@@ -253,7 +253,7 @@ Transformation Type:
 SELECT
     NULLIF(sls_order_dt, 0) AS sls_order_dt
 
-FROM bronze.crm_sales_details
+FROM silver.crm_sales_details
 
 WHERE sls_order_dt <= 0
     OR CHAR_LENGTH(sls_order_dt::TEXT) != 8
@@ -273,7 +273,7 @@ Transformation Type:
 SELECT
     NULLIF(sls_ship_dt, 0) AS sls_ship_dt
 
-FROM bronze.crm_sales_details
+FROM silver.crm_sales_details
 
 WHERE sls_ship_dt <= 0
     OR CHAR_LENGTH(sls_ship_dt::TEXT) != 8
@@ -293,7 +293,7 @@ Transformation Type:
 SELECT
     NULLIF(sls_due_dt, 0) AS sls_due_dt
 
-FROM bronze.crm_sales_details
+FROM silver.crm_sales_details
 
 WHERE sls_due_dt <= 0
     OR CHAR_LENGTH(sls_due_dt::TEXT) != 8
@@ -312,7 +312,7 @@ Transformation Type:
 
 SELECT *
 
-FROM bronze.crm_sales_details
+FROM silver.crm_sales_details
 
 WHERE sls_ship_dt < sls_order_dt
     OR sls_order_dt > sls_due_dt;
@@ -334,7 +334,7 @@ SELECT
     sls_quantity,
     sls_price
 
-FROM bronze.crm_sales_details
+FROM silver.crm_sales_details
 
 WHERE sls_sales != sls_quantity * sls_price
     OR sls_sales IS NULL
@@ -384,7 +384,7 @@ SELECT
         ELSE sls_price
     END AS corrected_price
 
-FROM bronze.crm_sales_details
+FROM silver.crm_sales_details
 
 WHERE sls_sales != sls_quantity * sls_price
     OR sls_sales IS NULL
@@ -429,7 +429,7 @@ FROM
         bdate,
         gen
 
-    FROM bronze.erp_cust_az12
+    FROM silver.erp_cust_az12
 
 ) t
 
@@ -452,7 +452,7 @@ Transformation Type:
 SELECT DISTINCT
     bdate
 
-FROM bronze.erp_cust_az12
+FROM silver.erp_cust_az12
 
 WHERE bdate > CURRENT_DATE;
 
@@ -477,7 +477,7 @@ Transformation Type:
 
 SELECT *
 
-FROM bronze.erp_px_cat_g1v2
+FROM silver.erp_px_cat_g1v2
 
 WHERE cat != TRIM(cat)
     OR subcat != TRIM(subcat)
@@ -495,4 +495,5 @@ Transformation Type:
 
 SELECT DISTINCT
     maintenance
-FROM bronze.erp_px_cat_g1v2;
+
+FROM silver.erp_px_cat_g1v2;
