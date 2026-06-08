@@ -153,3 +153,13 @@ case
 	else trim(cntry)
 END AS cntry
 from bronze.erp_loc_a101;
+
+TRUNCATE table silver.erp_px_cat_g1v2;
+
+insert into silver.erp_px_cat_g1v2(id, cat, subcat, maintenance)
+select 
+id, 
+trim(cat) as cat,
+trim(subcat) as cat,
+trim(maintenance) as maintenance 
+from bronze.erp_px_cat_g1v2;
