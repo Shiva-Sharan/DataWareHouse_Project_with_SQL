@@ -1,160 +1,122 @@
-/*
-===============================================================================
-DDL SCRIPT: CREATE SILVER LAYER TABLES
-===============================================================================
-Purpose:
-    Creates all tables required for the 'silver' schema in the data warehouse.
+TRUNCATE TABLE silver.crm_cust_info;
 
-Behavior:
-    - Existing tables are dropped before recreation
-    - Tables are designed for PostgreSQL
-    - Includes audit column: dwh_create_date
+INSERT INTO silver.crm_cust_info (
+    cst_id,
+    cst_key,
+    cst_firstname,
+    cst_lastname,
+    cst_martial_status,
+    cst_gndr,
+    cst_create_date
+)
 
-Layer:
-    Silver Layer
+SELECT
+    cst_id,
+    cst_key,
+    TRIM(cst_firstname) AS cst_firstname,
+    TRIM(cst_lastname) AS cst_lastname,
 
-Description:
-    The silver layer stores cleaned and standardized raw data
-    received from source systems before transformation into
-    business-ready models.
+    CASE
+        WHEN UPPER(TRIM(cst_martial_status)) = 'S' THEN 'Single'
+        WHEN UPPER(TRIM(cst_martial_status)) = 'M' THEN 'Married'
+        ELSE 'n/a'
+    END AS cst_martial_status,
 
-Source Systems:
-    - CRM System
-    - ERP System
-===============================================================================
-*/
+    CASE
+        WHEN UPPER(TRIM(cst_gndr)) = 'F' THEN 'Female'
+        WHEN UPPER(TRIM(cst_gndr)) = 'M' THEN 'Male'
+        ELSE 'n/a'
+    END AS cst_gndr,
 
+    cst_create_date
 
-/*
-===============================================================================
-TABLE: silver.crm_cust_info
-===============================================================================
-Description:
-    Stores customer master data extracted from the CRM system.
-===============================================================================
-*/
+FROM (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY cst_id
+               ORDER BY cst_create_date DESC
+           ) AS flag_test
+    FROM bronze.crm_cust_info
+    WHERE cst_id IS NOT NULL
+) t
 
-DROP TABLE IF EXISTS silver.crm_cust_info;
+WHERE flag_test = 1;
 
-CREATE TABLE silver.crm_cust_info (
-    cst_id               INT,
-    cst_key              VARCHAR(50),
-    cst_firstname        VARCHAR(50),
-    cst_lastname         VARCHAR(50),
-    cst_martial_status   VARCHAR(50),
-    cst_gndr             VARCHAR(50),
-    cst_create_date      DATE,
-    dwh_create_date      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+TRUNCATE TABLE silver.crm_prd_info;
+INSERT INTO silver.crm_prd_info(
+prd_id, 
+cat_id, 
+prd_key, 
+prd_nm, 
+prd_cost, 
+prd_line,
+prd_start_dt, 
+prd_end_dt
+)
 
-
-
-/*
-===============================================================================
-TABLE: silver.crm_prd_info
-===============================================================================
-Description:
-    Stores product master data extracted from the CRM system.
-===============================================================================
-*/
-
-DROP TABLE IF EXISTS silver.crm_prd_info;
-
-CREATE TABLE silver.crm_prd_info (
-    prd_id               INT,
-	cat_id				 VARCHAR(50),
-    prd_key              VARCHAR(50),
-    prd_nm               VARCHAR(50),
-    prd_cost             INT,
-    prd_line             VARCHAR(50),
-    prd_start_dt         DATE,
-    prd_end_dt           DATE,
-    dwh_create_date      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-
-/*
-===============================================================================
-TABLE: silver.crm_sales_details
-===============================================================================
-Description:
-    Stores sales transaction data extracted from the CRM system.
-===============================================================================
-*/
-
-DROP TABLE IF EXISTS silver.crm_sales_details;
-
-CREATE TABLE silver.crm_sales_details (
-    sls_ord_num          VARCHAR(50),
-    sls_prd_key          VARCHAR(50),
-    sls_cust_id          INT,
-    sls_order_dt         DATE,
-    sls_ship_dt          DATE,
-    sls_due_dt           DATE,
-    sls_sales            INT,
-    sls_quantity         INT,
-    sls_price            INT,
-    dwh_create_date      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+select 
+prd_id,
+cast(replace(substring(prd_key,1,5),'-','_') as Varchar(50)) as cat_id,
+cast(substring(prd_key,7, length(prd_key)) as varchar(50)) as prd_key,
+prd_nm, 
+coalesce(prd_cost, 0) as prd_cost,
+case upper(trim(prd_line))
+	when 'M' then 'Mountain'
+	when 'R' then 'Road'
+	when 'S' then 'Other Sales'
+	when 'T' then 'Touring'
+	else 'n/a'
+end as prd_line,
+cast(prd_start_dt as date) as prd_start_dt,
+cast(lead(prd_start_dt) over(
+partition by prd_key order by prd_start_dt
+) - interval '1 day' as date) as prd_end_dt
+from bronze.crm_prd_info;
 
 
 
-/*
-===============================================================================
-TABLE: silver.erp_loc_a101
-===============================================================================
-Description:
-    Stores customer location data extracted from the ERP system.
-===============================================================================
-*/
+TRUNCATE TABLE silver.crm_sales_details;
 
-DROP TABLE IF EXISTS silver.erp_loc_a101;
+INSERT INTO silver.crm_sales_details (
+    sls_ord_num          ,
+    sls_prd_key          ,
+    sls_cust_id          ,
+    sls_order_dt         ,
+    sls_ship_dt          ,
+    sls_due_dt           ,
+    sls_sales            ,
+    sls_quantity         ,
+    sls_price                  
+)
 
-CREATE TABLE silver.erp_loc_a101 (
-    cid                  VARCHAR(50),
-    cntry                VARCHAR(50),
-    dwh_create_date      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-
-/*
-===============================================================================
-TABLE: silver.erp_cust_az12
-===============================================================================
-Description:
-    Stores customer demographic data extracted from the ERP system.
-===============================================================================
-*/
-
-DROP TABLE IF EXISTS silver.erp_cust_az12;
-
-CREATE TABLE silver.erp_cust_az12 (
-    cid                  VARCHAR(50),
-    bdate                DATE,
-    gen                  VARCHAR(50),
-    dwh_create_date      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-
-/*
-===============================================================================
-TABLE: silver.erp_px_cat_g1v2
-===============================================================================
-Description:
-    Stores product category and maintenance information
-    extracted from the ERP system.
-===============================================================================
-*/
-
-DROP TABLE IF EXISTS silver.erp_px_cat_g1v2;
-
-CREATE TABLE silver.erp_px_cat_g1v2 (
-    id                   VARCHAR(50),
-    cat                  VARCHAR(50),
-    subcat               VARCHAR(50),
-    maintenance          VARCHAR(50),
-    dwh_create_date      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+select 
+sls_ord_num, 
+sls_prd_key,
+sls_cust_id,
+case 
+	when sls_order_dt = 0 or char_length(sls_order_dt:: text) != 8 then NULL
+	else cast(cast(sls_order_dt as varchar) as date) 
+end as sls_order_dt,
+case 
+	when sls_ship_dt = 0 or char_length(sls_ship_dt:: text) != 8 then NULL
+	else cast(cast(sls_ship_dt as varchar) as date) 
+end as sls_ship_dt,
+case 
+	when sls_due_dt = 0 or char_length(sls_due_dt:: text) != 8 then NULL
+	else cast(cast(sls_due_dt as varchar) as date) 
+end as sls_due_dt,
+case 
+	when sls_sales is null 
+	or sls_sales <=0 
+	or sls_sales = sls_quantity * abs(sls_price)
+	then sls_quantity * abs(sls_price)
+	else sls_sales
+end	as sls_sales, 
+sls_quantity, 
+case 
+	when sls_price is null
+	or sls_price <= 0 
+	then sls_sales / nullif(sls_quantity,0)
+	else sls_price
+end as sls_price 
+from bronze.crm_sales_details
