@@ -2,37 +2,39 @@
 ===============================================================================
 DDL SCRIPT: CREATE SILVER LAYER TABLES
 ===============================================================================
+
 Purpose:
-    Creates all tables required for the 'silver' schema in the data warehouse.
+    Creates all tables in the 'silver' schema for cleansed and
+    standardized data.
 
 Behavior:
-    - Existing tables are dropped before recreation
-    - Tables are designed for PostgreSQL
-    - Includes audit column: dwh_create_date
+    - Existing tables are dropped and recreated
+    - All tables include an audit column: dwh_create_date
+    - Designed for PostgreSQL
 
 Layer:
-    Silver Layer
+    Silver Layer (Cleansed Data)
 
 Description:
-    The silver layer stores cleaned and standardized raw data
-    received from source systems before transformation into
-    business-ready models.
+    The Silver layer stores data that has been cleansed, deduplicated,
+    and standardized from the Bronze layer, ready for integration into
+    the Gold layer dimensional model.
 
 Source Systems:
-    - CRM System
-    - ERP System
+    - CRM System  → Customer, Product, Sales data
+    - ERP System  → Customer Demographics, Locations, Product Categories
+
 ===============================================================================
 */
 
 
-/*
-===============================================================================
-TABLE: silver.crm_cust_info
-===============================================================================
-Description:
-    Stores customer master data extracted from the CRM system.
-===============================================================================
-*/
+
+-- =============================================================================
+-- TABLE: silver.crm_cust_info
+-- =============================================================================
+-- Cleansed customer master data from CRM system.
+-- Transformations: deduplication, trimming, code standardization.
+-- =============================================================================
 
 DROP TABLE IF EXISTS silver.crm_cust_info;
 
@@ -49,20 +51,18 @@ CREATE TABLE silver.crm_cust_info (
 
 
 
-/*
-===============================================================================
-TABLE: silver.crm_prd_info
-===============================================================================
-Description:
-    Stores product master data extracted from the CRM system.
-===============================================================================
-*/
+-- =============================================================================
+-- TABLE: silver.crm_prd_info
+-- =============================================================================
+-- Cleansed product catalog from CRM system.
+-- Transformations: key extraction, cost imputation, SCD Type 2 end dates.
+-- =============================================================================
 
 DROP TABLE IF EXISTS silver.crm_prd_info;
 
 CREATE TABLE silver.crm_prd_info (
     prd_id               INT,
-	cat_id				 VARCHAR(50),
+    cat_id               VARCHAR(50),
     prd_key              VARCHAR(50),
     prd_nm               VARCHAR(50),
     prd_cost             INT,
@@ -74,14 +74,12 @@ CREATE TABLE silver.crm_prd_info (
 
 
 
-/*
-===============================================================================
-TABLE: silver.crm_sales_details
-===============================================================================
-Description:
-    Stores sales transaction data extracted from the CRM system.
-===============================================================================
-*/
+-- =============================================================================
+-- TABLE: silver.crm_sales_details
+-- =============================================================================
+-- Cleansed sales transactions from CRM system.
+-- Transformations: date conversion (INT → DATE), sales amount correction.
+-- =============================================================================
 
 DROP TABLE IF EXISTS silver.crm_sales_details;
 
@@ -100,33 +98,12 @@ CREATE TABLE silver.crm_sales_details (
 
 
 
-/*
-===============================================================================
-TABLE: silver.erp_loc_a101
-===============================================================================
-Description:
-    Stores customer location data extracted from the ERP system.
-===============================================================================
-*/
-
-DROP TABLE IF EXISTS silver.erp_loc_a101;
-
-CREATE TABLE silver.erp_loc_a101 (
-    cid                  VARCHAR(50),
-    cntry                VARCHAR(50),
-    dwh_create_date      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-
-/*
-===============================================================================
-TABLE: silver.erp_cust_az12
-===============================================================================
-Description:
-    Stores customer demographic data extracted from the ERP system.
-===============================================================================
-*/
+-- =============================================================================
+-- TABLE: silver.erp_cust_az12
+-- =============================================================================
+-- Cleansed customer demographics from ERP system.
+-- Transformations: ID prefix removal (NAS), future date nullification.
+-- =============================================================================
 
 DROP TABLE IF EXISTS silver.erp_cust_az12;
 
@@ -139,15 +116,29 @@ CREATE TABLE silver.erp_cust_az12 (
 
 
 
-/*
-===============================================================================
-TABLE: silver.erp_px_cat_g1v2
-===============================================================================
-Description:
-    Stores product category and maintenance information
-    extracted from the ERP system.
-===============================================================================
-*/
+-- =============================================================================
+-- TABLE: silver.erp_loc_a101
+-- =============================================================================
+-- Cleansed customer location data from ERP system.
+-- Transformations: country name standardization, whitespace trimming.
+-- =============================================================================
+
+DROP TABLE IF EXISTS silver.erp_loc_a101;
+
+CREATE TABLE silver.erp_loc_a101 (
+    cid                  VARCHAR(50),
+    cntry                VARCHAR(50),
+    dwh_create_date      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+-- =============================================================================
+-- TABLE: silver.erp_px_cat_g1v2
+-- =============================================================================
+-- Cleansed product category hierarchy from ERP system.
+-- Transformations: whitespace trimming, maintenance flag standardization.
+-- =============================================================================
 
 DROP TABLE IF EXISTS silver.erp_px_cat_g1v2;
 

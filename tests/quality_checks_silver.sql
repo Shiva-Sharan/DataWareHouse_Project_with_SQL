@@ -4,7 +4,7 @@ SILVER LAYER DATA QUALITY CHECKS
 ===============================================================================
 
 Purpose:
-    Validate and analyze cleaned Silver layer data after transformation
+    Validate and analyze cleansed Silver layer data after transformation
     from the Bronze layer.
 
 Checks Included:
@@ -17,6 +17,10 @@ Checks Included:
     - Data consistency checks
     - Referential integrity checks
 
+Usage:
+    Run each query individually to inspect results.
+    A successful check returns zero rows.
+
 ===============================================================================
 */
 
@@ -24,18 +28,17 @@ Checks Included:
 
 /*
 ===============================================================================
-CRM CUSTOMER INFO VALIDATION
+SECTION 1: CRM CUSTOMER INFO VALIDATION
 ===============================================================================
 */
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 1: Duplicate or NULL Customer IDs
-Transformation Type:
-    - Duplicate Detection
-    - NULL Validation
-------------------------------------------------------------------------------
+Type: Duplicate Detection, NULL Validation
+Expected: 0 rows (no duplicates, no NULLs)
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -52,11 +55,11 @@ HAVING COUNT(*) > 1
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 2: First Name Whitespace Issues
-Transformation Type:
-    - Data Cleansing Validation
-------------------------------------------------------------------------------
+Type: Data Cleansing Validation
+Expected: 0 rows (all names are trimmed)
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -71,11 +74,11 @@ WHERE cst_firstname != TRIM(cst_firstname);
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 3: Last Name Whitespace Issues
-Transformation Type:
-    - Data Cleansing Validation
-------------------------------------------------------------------------------
+Type: Data Cleansing Validation
+Expected: 0 rows (all names are trimmed)
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -90,11 +93,11 @@ WHERE cst_lastname != TRIM(cst_lastname);
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 4: Distinct Marital Status Values
-Transformation Type:
-    - Data Standardization Validation
-------------------------------------------------------------------------------
+Type: Data Standardization Validation
+Expected: Only 'Single', 'Married', 'n/a'
+-------------------------------------------------------------------------------
 */
 
 SELECT DISTINCT
@@ -104,22 +107,19 @@ FROM silver.crm_cust_info;
 
 
 
-
-
 /*
 ===============================================================================
-CRM PRODUCT INFO VALIDATION
+SECTION 2: CRM PRODUCT INFO VALIDATION
 ===============================================================================
 */
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 5: Duplicate or NULL Product IDs
-Transformation Type:
-    - Duplicate Detection
-    - NULL Validation
-------------------------------------------------------------------------------
+Type: Duplicate Detection, NULL Validation
+Expected: 0 rows
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -136,11 +136,11 @@ HAVING COUNT(*) > 1
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 6: Product Name Whitespace Issues
-Transformation Type:
-    - Data Cleansing Validation
-------------------------------------------------------------------------------
+Type: Data Cleansing Validation
+Expected: 0 rows
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -153,12 +153,11 @@ WHERE prd_nm != TRIM(prd_nm);
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 7: Negative or NULL Product Cost
-Transformation Type:
-    - Missing Value Validation
-    - Business Rule Validation
-------------------------------------------------------------------------------
+Type: Missing Value Validation, Business Rule Validation
+Expected: 0 rows (costs should be >= 0 after COALESCE)
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -172,11 +171,11 @@ WHERE prd_cost < 0
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 8: Distinct Product Line Values
-Transformation Type:
-    - Data Standardization Validation
-------------------------------------------------------------------------------
+Type: Data Standardization Validation
+Expected: Only 'Mountain', 'Road', 'Other Sales', 'Touring', 'n/a'
+-------------------------------------------------------------------------------
 */
 
 SELECT DISTINCT
@@ -187,12 +186,11 @@ FROM silver.crm_prd_info;
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 9: Invalid Product Date Ranges
-Transformation Type:
-    - Date Validation
-    - Business Rule Validation
-------------------------------------------------------------------------------
+Type: Date Validation, Business Rule Validation
+Expected: 0 rows (end date should not precede start date)
+-------------------------------------------------------------------------------
 */
 
 SELECT *
@@ -206,11 +204,11 @@ WHERE prd_end_dt < prd_start_dt
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 10: Product End Date Calculation Validation
-Transformation Type:
-    - SCD (Slowly Changing Dimension) Validation
-------------------------------------------------------------------------------
+Type: SCD (Slowly Changing Dimension) Validation
+Purpose: Verify that prd_end_dt matches the LEAD()-calculated value
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -233,21 +231,19 @@ FROM silver.crm_prd_info;
 
 
 
-
-
 /*
 ===============================================================================
-CRM SALES DETAILS VALIDATION
+SECTION 3: CRM SALES DETAILS VALIDATION
 ===============================================================================
 */
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 11: Invalid Order Dates
-Transformation Type:
-    - Date Validation
-------------------------------------------------------------------------------
+Type: Date Validation
+Expected: 0 rows
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -263,11 +259,11 @@ WHERE sls_order_dt <= 0
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 12: Invalid Shipping Dates
-Transformation Type:
-    - Date Validation
-------------------------------------------------------------------------------
+Type: Date Validation
+Expected: 0 rows
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -283,11 +279,11 @@ WHERE sls_ship_dt <= 0
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 13: Invalid Due Dates
-Transformation Type:
-    - Date Validation
-------------------------------------------------------------------------------
+Type: Date Validation
+Expected: 0 rows
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -303,11 +299,11 @@ WHERE sls_due_dt <= 0
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 14: Invalid Sales Date Relationships
-Transformation Type:
-    - Business Rule Validation
-------------------------------------------------------------------------------
+Type: Business Rule Validation
+Expected: 0 rows (ship_date >= order_date, order_date <= due_date)
+-------------------------------------------------------------------------------
 */
 
 SELECT *
@@ -320,12 +316,11 @@ WHERE sls_ship_dt < sls_order_dt
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 15: Invalid Sales Amount Calculations
-Transformation Type:
-    - Business Rule Validation
-    - Data Consistency Validation
-------------------------------------------------------------------------------
+Type: Business Rule Validation, Data Consistency Validation
+Expected: 0 rows (sales = quantity × price, all values > 0)
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -352,11 +347,11 @@ ORDER BY
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 16: Sales Correction Logic Validation
-Transformation Type:
-    - Data Correction Validation
-------------------------------------------------------------------------------
+Type: Data Correction Validation
+Purpose: Preview the corrected values applied during Silver transformation
+-------------------------------------------------------------------------------
 */
 
 SELECT
@@ -396,21 +391,19 @@ WHERE sls_sales != sls_quantity * sls_price
 
 
 
-
-
 /*
 ===============================================================================
-ERP CUSTOMER VALIDATION
+SECTION 4: ERP CUSTOMER VALIDATION
 ===============================================================================
 */
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 17: Customer ID Mapping Validation
-Transformation Type:
-    - Referential Integrity Validation
-------------------------------------------------------------------------------
+Type: Referential Integrity Validation
+Expected: 0 rows (all ERP customers map to a CRM customer)
+-------------------------------------------------------------------------------
 */
 
 SELECT *
@@ -442,11 +435,11 @@ WHERE cid NOT IN
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 18: Invalid Future Birth Dates
-Transformation Type:
-    - Date Validation
-------------------------------------------------------------------------------
+Type: Date Validation
+Expected: 0 rows (no birth dates in the future)
+-------------------------------------------------------------------------------
 */
 
 SELECT DISTINCT
@@ -458,21 +451,19 @@ WHERE bdate > CURRENT_DATE;
 
 
 
-
-
 /*
 ===============================================================================
-ERP PRODUCT CATEGORY VALIDATION
+SECTION 5: ERP PRODUCT CATEGORY VALIDATION
 ===============================================================================
 */
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 19: Category Table Whitespace Issues
-Transformation Type:
-    - Data Cleansing Validation
-------------------------------------------------------------------------------
+Type: Data Cleansing Validation
+Expected: 0 rows (all fields are trimmed)
+-------------------------------------------------------------------------------
 */
 
 SELECT *
@@ -486,11 +477,11 @@ WHERE cat != TRIM(cat)
 
 
 /*
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Check 20: Distinct Maintenance Values
-Transformation Type:
-    - Data Standardization Validation
-------------------------------------------------------------------------------
+Type: Data Standardization Validation
+Expected: Only 'Yes', 'No' (or 'n/a')
+-------------------------------------------------------------------------------
 */
 
 SELECT DISTINCT
