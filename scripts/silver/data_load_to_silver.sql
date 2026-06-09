@@ -263,7 +263,7 @@ BEGIN
                 AS DATE
             ),
 
-            DATE '9999-12-31'
+            prd_end_dt
 
         ) AS prd_end_dt
 
