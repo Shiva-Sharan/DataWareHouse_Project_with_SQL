@@ -36,3 +36,21 @@ from silver.crm_prd_info p
 left join silver.erp_px_cat_g1v2 pc
 on p.cat_id = pc.id
 where p.prd_end_dt is null
+
+select 
+s.sls_ord_num,
+s.sls_prd_key,
+p.product_number,
+p.product_key,
+c.customer_key,
+s.sls_order_dt,
+s.sls_ship_dt,
+s.sls_due_dt,
+s.sls_sales,
+s.sls_quantity,
+s.sls_price
+from silver.crm_sales_details s
+left join gold.dim_products p
+on s.sls_prd_key = p.product_number
+left join gold.dim_customers c
+on s.sls_cust_id = c.customer_id
