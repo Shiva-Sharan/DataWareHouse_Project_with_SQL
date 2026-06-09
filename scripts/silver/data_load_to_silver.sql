@@ -210,64 +210,50 @@ BEGIN
         prd_end_dt
     )
 
-    SELECT
+SELECT
+    prd_id,
 
-        prd_id,
+    -- Extract category ID
+    CAST(
+        REPLACE(SUBSTRING(prd_key, 1, 5), '-', '_')
+        AS VARCHAR(50)
+    ) AS cat_id,
 
-        -- Data Transformation:
-        -- Extract category ID from product key
-        CAST(
-            REPLACE(SUBSTRING(prd_key, 1, 5), '-', '_')
-            AS VARCHAR(50)
-        ) AS cat_id,
+    -- Extract product key
+    CAST(
+        SUBSTRING(prd_key, 7, LENGTH(prd_key))
+        AS VARCHAR(50)
+    ) AS prd_key,
 
-        -- Data Transformation:
-        -- Extract actual product key
-        CAST(
-            SUBSTRING(prd_key, 7, LENGTH(prd_key))
-            AS VARCHAR(50)
-        ) AS prd_key,
 
-        -- Data Cleansing
-        TRIM(prd_nm) AS prd_nm,
+    -- Clean product name
+    TRIM(prd_nm) AS prd_nm,
 
-        -- Missing Value Handling
-        COALESCE(prd_cost, 0) AS prd_cost,
+    -- Handle missing costs
+    COALESCE(prd_cost, 0) AS prd_cost,
 
-        -- Data Standardization
-        CASE UPPER(TRIM(prd_line))
+    -- Standardize product line
+    CASE UPPER(TRIM(prd_line))
+        WHEN 'M' THEN 'Mountain'
+        WHEN 'R' THEN 'Road'
+        WHEN 'S' THEN 'Other Sales'
+        WHEN 'T' THEN 'Touring'
+        ELSE 'n/a'
+    END AS prd_line,
 
-            WHEN 'M' THEN 'Mountain'
-            WHEN 'R' THEN 'Road'
-            WHEN 'S' THEN 'Other Sales'
-            WHEN 'T' THEN 'Touring'
+    -- Convert start date
+    CAST(prd_start_dt AS DATE) AS prd_start_dt,
 
-            ELSE 'n/a'
+    -- SCD Type 2 logic for end date
+    CAST(
+        LEAD(prd_start_dt) OVER (
+            PARTITION BY prd_key
+            ORDER BY prd_start_dt
+        ) - INTERVAL '1 day'
+        AS DATE
+    ) AS prd_end_dt
 
-        END AS prd_line,
-
-        CAST(prd_start_dt AS DATE) AS prd_start_dt,
-
-        -- SCD Logic:
-        -- Calculate product end date
-        COALESCE
-        (
-            CAST
-            (
-                LEAD(prd_start_dt) OVER
-                (
-                    PARTITION BY prd_key
-                    ORDER BY prd_start_dt
-                ) - INTERVAL '1 day'
-
-                AS DATE
-            ),
-
-            prd_end_dt
-
-        ) AS prd_end_dt
-
-    FROM bronze.crm_prd_info;
+FROM bronze.crm_prd_info;
 
     end_time := clock_timestamp();
 
